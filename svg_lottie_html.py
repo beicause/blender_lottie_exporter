@@ -4,15 +4,17 @@ from math import ceil, sqrt
 import re
 import bpy
 import os
-import subprocess
 
 name = "test"
 save_dir = f"/home/luo/Picture/bld_svg/"
 opt = True
-svgo="/home/luo/.local/share/fnm/node-versions/v21.7.2/installation/bin/node /home/luo/.local/share/pnpm/global/5/node_modules/svgo/bin/svgo"
 export_type = "lottie"
+
+svgo = "/home/luo/.local/share/fnm/node-versions/v21.7.2/installation/bin/node /home/luo/.local/share/pnpm/global/5/node_modules/svgo/bin/svgo"
+
 scene = bpy.context.scene
 os.system("mkdir -p " + save_dir)
+
 
 def print(*data):
     for window in bpy.context.window_manager.windows:
@@ -24,7 +26,10 @@ def print(*data):
                     bpy.ops.console.scrollback_append(
                         text=str(" ".join([str(x) for x in data])), type="OUTPUT"
                     )
+
+
 print("Save dir: ", save_dir)
+
 
 def write_seq(dir):
     os.system("mkdir -p " + dir)
@@ -81,17 +86,19 @@ def export_lottie():
     write_seq(tmp_dir)
     if opt:
         cmd = f"{svgo} -f {tmp_dir} -o {tmp_dir+'.opt'}"
-        print("Exec: "+cmd)
+        print("Exec: " + cmd)
         os.system(cmd)
     for i in range(scene.frame_start, scene.frame_end + 1):
-        f=open(
-            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg","r")
+        f = open(
+            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg",
+            "r",
+        )
         svg = f.read()
         f.close()
         width_span = re.search(r"width=\"\d+\"", svg).span()
         height_span = re.search(r"height=\"\d+\"", svg).span()
-        width=int(svg[width_span[0]:width_span[1]].split('"')[-2])
-        height=int(svg[height_span[0]:height_span[1]].split('"')[-2])
+        width = int(svg[width_span[0] : width_span[1]].split('"')[-2])
+        height = int(svg[height_span[0] : height_span[1]].split('"')[-2])
         asset = {
             "id": f"svg_{i}",  # string
             # Unique identifier used by layers when referencing this asset
@@ -196,18 +203,22 @@ def export_html():
     write_seq(tmp_dir)
     if opt:
         cmd = f"{svgo} -f {tmp_dir} -o {tmp_dir+'.opt'}"
-        print("Exec: "+cmd)
+        print("Exec: " + cmd)
         os.system(cmd)
     for i in range(scene.frame_start, scene.frame_end + 1):
-        f=open(
-            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg","r")
+        f = open(
+            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg",
+            "r",
+        )
         svg = f.read()
         f.close()
         width_span = re.search(r"width=\"\d+\"", svg).span()
         height_span = re.search(r"height=\"\d+\"", svg).span()
-        width=int(svg[width_span[0]:width_span[1]].split('"')[-2])
-        height=int(svg[height_span[0]:height_span[1]].split('"')[-2])
-        svg=svg.replace('version="1.0">',f'version="1.0" viewBox="0 0 {width} {height}">',1)
+        width = int(svg[width_span[0] : width_span[1]].split('"')[-2])
+        height = int(svg[height_span[0] : height_span[1]].split('"')[-2])
+        svg = svg.replace(
+            'version="1.0">', f'version="1.0" viewBox="0 0 {width} {height}">', 1
+        )
         t.write(svg)
     if opt:
         os.system("rm -r " + tmp_dir + ".opt")
