@@ -4,15 +4,15 @@ from math import ceil, sqrt
 import re
 import bpy
 import os
+import subprocess
 
 name = "test"
 save_dir = f"/home/luo/Picture/bld_svg/"
-opt = False
+opt = True
+svgo="/home/luo/.local/share/fnm/node-versions/v21.7.2/installation/bin/node /home/luo/.local/share/pnpm/global/5/node_modules/svgo/bin/svgo"
 export_type = "lottie"
 scene = bpy.context.scene
 os.system("mkdir -p " + save_dir)
-print("Save dir: ", save_dir)
-
 
 def print(*data):
     for window in bpy.context.window_manager.windows:
@@ -24,6 +24,32 @@ def print(*data):
                     bpy.ops.console.scrollback_append(
                         text=str(" ".join([str(x) for x in data])), type="OUTPUT"
                     )
+print("Save dir: ", save_dir)
+
+def write_seq(dir):
+    os.system("mkdir -p " + dir)
+    for i in range(scene.frame_start, scene.frame_end + 1):
+        scene.frame_set(i)
+        path = dir + "/" + name + ".tmp." + str(i) + ".svg"
+        bpy.ops.wm.gpencil_export_svg(
+            filepath=path,
+            use_fill=True,
+            use_normalized_thickness=False,
+            use_clip_camera=True,
+        )
+        with open(path, "r+") as f:
+            svg = f.read()
+            svg = (
+                svg.replace("<?:anonymous?>\n", "")
+                .replace(
+                    "<!-- Generator: Blender, SVG Export for Grease Pencil - v1.0 -->\n",
+                    "",
+                )
+                .replace("<?xml?>\n", "")
+            )
+            f.seek(0)
+            f.truncate()
+            f.write(svg)
 
 
 assert export_type in ["lottie", "html"]
@@ -51,41 +77,21 @@ def export_lottie():
         "layers": [],
     }
     t = open(path, "w")
-
+    tmp_dir = path + ".tmp"
+    write_seq(tmp_dir)
+    if opt:
+        cmd = f"{svgo} -f {tmp_dir} -o {tmp_dir+'.opt'}"
+        print("Exec: "+cmd)
+        os.system(cmd)
     for i in range(scene.frame_start, scene.frame_end + 1):
-        scene.frame_set(i)
-        tmp_path = path + ".tmp." + str(i) + ".svg"
-        bpy.ops.wm.gpencil_export_svg(
-            filepath=tmp_path,
-            use_fill=True,
-            use_normalized_thickness=False,
-            use_clip_camera=True,
-        )
-        f = open(tmp_path, "r+")
+        f=open(
+            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg","r")
         svg = f.read()
-        svg = (
-            svg.replace("<?:anonymous?>\n", "")
-            .replace(
-                "<!-- Generator: Blender, SVG Export for Grease Pencil - v1.0 -->\n", ""
-            )
-            .replace("<?xml?>\n", "")
-        )
-        f.seek(0)
-        f.truncate()
-        f.write(svg)
         f.close()
-
-        if opt:
-            cmd = f"/home/luo/micromamba/bin/scour -i {tmp_path} -o {tmp_path}.opt.svg --enable-id-stripping --enable-comment-stripping --shorten-ids --indent=none --strip-xml-prolog --remove-descriptive-elements --no-line-breaks --strip-xml-space"
-            os.system(cmd)
-
-        with open(tmp_path + (".opt.svg" if opt else ""), "r") as f_opt:
-            svg = f_opt.read()
-        view_box = re.search(r"viewBox=\"\d+ \d+ \d+ \d+\"", svg).span()
-        size = [
-            int(x) for x in (svg[view_box[0] : view_box[1]].split('"')[-2].split(" "))
-        ]
-
+        width_span = re.search(r"width=\"\d+\"", svg).span()
+        height_span = re.search(r"height=\"\d+\"", svg).span()
+        width=int(svg[width_span[0]:width_span[1]].split('"')[-2])
+        height=int(svg[height_span[0]:height_span[1]].split('"')[-2])
         asset = {
             "id": f"svg_{i}",  # string
             # Unique identifier used by layers when referencing this asset
@@ -97,9 +103,9 @@ def export_lottie():
             # Filename or data url
             "e": 1,  # integer
             # Whether the file is embedded
-            "w": size[2] - size[0],  # number
+            "w": width,  # number
             # Width of the image
-            "h": size[3] - size[1],  # number
+            "h": height,  # number
             # Height of the image
             "t": "seq",  # string = 'seq'
             # Marks as part of an image sequence if present
@@ -151,8 +157,9 @@ def export_lottie():
             lottie["h"] = asset["h"]
 
         lottie["layers"].append(layer)
-        os.system("rm " + tmp_path + " " + tmp_path + ".opt.svg")
-
+    if opt:
+        os.system("rm -r " + tmp_dir + ".opt")
+    os.system("rm -r " + tmp_dir)
     json.dump(lottie, t)
     t.close()
     print("Saved: " + path)
@@ -185,39 +192,26 @@ def export_html():
     </style>
     <body>"""
     )
-
+    tmp_dir = path + ".tmp"
+    write_seq(tmp_dir)
+    if opt:
+        cmd = f"{svgo} -f {tmp_dir} -o {tmp_dir+'.opt'}"
+        print("Exec: "+cmd)
+        os.system(cmd)
     for i in range(scene.frame_start, scene.frame_end + 1):
-        scene.frame_set(i)
-        tmp_path = path + ".tmp." + str(i) + ".svg"
-        bpy.ops.wm.gpencil_export_svg(
-            filepath=tmp_path,
-            use_fill=True,
-            use_normalized_thickness=False,
-            use_clip_camera=True,
-        )
-        f = open(tmp_path, "r+")
+        f=open(
+            tmp_dir + (".opt" if opt else "") + "/" + name + ".tmp." + str(i) + ".svg","r")
         svg = f.read()
-        svg = (
-            svg.replace("<?:anonymous?>\n", "")
-            .replace(
-                "<!-- Generator: Blender, SVG Export for Grease Pencil - v1.0 -->\n", ""
-            )
-            .replace("<?xml?>\n", "")
-        )
-        f.seek(0)
-        f.truncate()
-        f.write(svg)
         f.close()
-
-        if opt:
-            cmd = f"/home/luo/micromamba/bin/scour -i {tmp_path} -o {tmp_path}.opt.svg --enable-id-stripping --enable-comment-stripping --shorten-ids --indent=none --strip-xml-prolog --remove-descriptive-elements --no-line-breaks --strip-xml-space"
-            os.system(cmd)
-
-        with open(tmp_path + (".opt.svg" if opt else ""), "r") as f_opt:
-            t.write(f_opt.read())
-
-        os.system("rm " + tmp_path + " " + tmp_path + ".opt.svg")
-
+        width_span = re.search(r"width=\"\d+\"", svg).span()
+        height_span = re.search(r"height=\"\d+\"", svg).span()
+        width=int(svg[width_span[0]:width_span[1]].split('"')[-2])
+        height=int(svg[height_span[0]:height_span[1]].split('"')[-2])
+        svg=svg.replace('version="1.0">',f'version="1.0" viewBox="0 0 {width} {height}">',1)
+        t.write(svg)
+    if opt:
+        os.system("rm -r " + tmp_dir + ".opt")
+    os.system("rm -r " + tmp_dir)
     t.write(
         """</body>
     </html>"""

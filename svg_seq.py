@@ -23,25 +23,25 @@ def print(*data):
                         text=str(" ".join([str(x) for x in data])), type="OUTPUT"
                     )
 
-
-for i in range(scene.frame_start, scene.frame_end + 1):
-    scene.frame_set(i)
-    path = save_dir + name + "_" + str(i) + ".svg"
-    bpy.ops.wm.gpencil_export_svg(
-        filepath=path,
-        use_fill=True,
-        use_normalized_thickness=False,
-        use_clip_camera=True,
-    )
-    with open(path, "r+") as f:
-        svg = f.read()
-        svg = (
-            svg.replace("<?:anonymous?>\n", "")
-            .replace(
-                "<!-- Generator: Blender, SVG Export for Grease Pencil - v1.0 -->\n", ""
-            )
-            .replace("<?xml?>\n", "")
+def write_seq():
+    for i in range(scene.frame_start, scene.frame_end + 1):
+        scene.frame_set(i)
+        path = save_dir + name + "_" + str(i) + ".svg"
+        bpy.ops.wm.gpencil_export_svg(
+            filepath=path,
+            use_fill=True,
+            use_normalized_thickness=False,
+            use_clip_camera=True,
         )
-        f.seek(0)
-        f.truncate()
-        f.write(svg)
+        with open(path, "r+") as f:
+            svg = f.read()
+            svg = (
+                svg.replace("<?:anonymous?>\n", "")
+                .replace(
+                    "<!-- Generator: Blender, SVG Export for Grease Pencil - v1.0 -->\n", ""
+                )
+                .replace("<?xml?>\n", "")
+            )
+            f.seek(0)
+            f.truncate()
+            f.write(svg)
