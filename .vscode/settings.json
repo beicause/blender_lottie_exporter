@@ -1,8 +1,0 @@
-{
-    "python.autoComplete.extraPaths": [
-        "/home/luo/micromamba/envs/fake-bpy/lib/python3.11/site-packages/fake-bpy-module"
-    ],
-    "python.analysis.extraPaths": [
-        "/home/luo/micromamba/envs/fake-bpy/lib/python3.11/site-packages/fake-bpy-module"
-    ]
-}
